@@ -102,8 +102,29 @@ def hmi_data_loader(start_time, end_time=None):
             df.to_csv(os.path.join(download_dir, base_filename), index=False)
             print(f"Saved region data to {base_filename}")
 
+            # Plot the bounding boxes for each labeled region
+            plt.figure(figsize=(10, 8))
+            plt.imshow(mag_field, cmap='seismic', origin='lower', vmin=-2000, vmax=2000)
+            plt.colorbar(label='Magnetic Field Strength (Gauss)')
+            plt.title('HMI Magnetogram with Active Regions')
+
+            # Overlay bounding boxes for each active region
+            for region in region_data:
+                xmin, xmax = region['bbox_xmin'], region['bbox_xmax']
+                ymin, ymax = region['bbox_ymin'], region['bbox_ymax']
+                width = xmax - xmin
+                height = ymax - ymin
+                max_reasonable_box_size = 1000  # Maximum reasonable box size in pixels
+                if width < max_reasonable_box_size and height < max_reasonable_box_size:
+                    plt.gca().add_patch(plt.Rectangle(
+                        (xmin, ymin), width, height,
+                        edgecolor='yellow', facecolor='none', linewidth=1.5
+                        ))
+
+            plt.show()
+
+
             # Deletes the FITS file after processing
-            os.remove(file)
             print(f"Processed and saved: {base_filename} ({len(region_data)} regions)")
 
 
@@ -112,58 +133,58 @@ def hmi_data_loader(start_time, end_time=None):
             continue
         print("finished processing files")
 
-hmi_data_loader("2025-04-04 00:00")
+hmi_data_loader("2025-04-04 21:55")
 
 
 
-# def hmi_image_viewer(file):
-#     """
-#     View HMI image using matplotlib and overlay bounding boxes for active regions.
+def hmi_image_viewer(file):
+    """
+    View HMI image using matplotlib and overlay bounding boxes for active regions.
 
-#     Parameters:
-#     file: Path to the HMI FITS file.
+    Parameters:
+    file: Path to the HMI FITS file.
 
-#     Return:
-#     Displays the HMI image with bounding boxes around active regions.
-#     """
+    Return:
+    Displays the HMI image with bounding boxes around active regions.
+    """
 
-#     # Open the FITS file
-#     with fits.open(file) as hdul:
-#         # Get the data from the first extension
-#         print(hdul.info())
-#         data = hdul[1].data
-#         header = hdul[1].header
-#         bscale = header.get('BSCALE', 1)
-#         bzero = header.get('BZERO', 0)
+    # Open the FITS file
+    with fits.open(file) as hdul:
+        # Get the data from the first extension
+        print(hdul.info())
+        data = hdul[1].data
+        header = hdul[1].header
+        bscale = header.get('BSCALE', 1)
+        bzero = header.get('BZERO', 0)
 
-#         mag_field = data * bscale + bzero
+        mag_field = data * bscale + bzero
 
-#         # Threshold for magnetic field strength in Gauss
-#         threshold = 100
+        # Threshold for magnetic field strength in Gauss
+        threshold = 100
 
-#         # Create a mask for regions with magnetic field strength above the threshold
-#         mask = np.abs(mag_field) > threshold
+        # Create a mask for regions with magnetic field strength above the threshold
+        mask = np.abs(mag_field) > threshold
 
-#         # Label connected regions
-#         labeled, num_features = label(mask)
+        # Label connected regions
+        labeled, num_features = label(mask)
 
-#         # Plot the data
-#         plt.figure(figsize=(10, 8))
-#         plt.imshow(mag_field, cmap='seismic', origin='lower', vmin=-2000, vmax=2000)
-#         plt.colorbar(label='Magnetic Field Strength (Gauss)')
-#         plt.title('HMI Magnetogram with Active Regions')
+        # Plot the data
+        plt.figure(figsize=(10, 8))
+        plt.imshow(mag_field, cmap='seismic', origin='lower', vmin=-2000, vmax=2000)
+        plt.colorbar(label='Magnetic Field Strength (Gauss)')
+        plt.title('HMI Magnetogram with Active Regions')
 
-#         # Overlay bounding boxes for each labeled region
-#         for label_id in range(1, num_features + 1):
-#             coords = np.argwhere(labeled == label_id)
-#             if coords.shape[0] < 1000:  # Minimum area threshold
-#                 continue
-#             y_min, x_min = coords.min(axis=0)
-#             y_max, x_max = coords.max(axis=0)
-#             plt.gca().add_patch(plt.Rectangle((x_min, y_min), x_max - x_min, y_max - y_min,
-#                                               edgecolor='yellow', facecolor='none', linewidth=1.5))
+        # Overlay bounding boxes for each labeled region
+        for label_id in range(1, num_features + 1):
+            coords = np.argwhere(labeled == label_id)
+            if coords.shape[0] < 1000:  # Minimum area threshold
+                continue
+            y_min, x_min = coords.min(axis=0)
+            y_max, x_max = coords.max(axis=0)
+            plt.gca().add_patch(plt.Rectangle((x_min, y_min), x_max - x_min, y_max - y_min,
+                                              edgecolor='yellow', facecolor='none', linewidth=1.5))
 
-#         plt.show()
+        plt.show()
 
 
     
