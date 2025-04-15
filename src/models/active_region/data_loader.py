@@ -45,7 +45,7 @@ def hmi_data_loader(start_time, end_time=None):
 
     # Minimum area in pixels for a region to be considered
 
-    min_area = 1000
+    min_area = 3000
 
     # Define the HMI data query
     query = Fido.search(
@@ -120,12 +120,13 @@ def hmi_data_loader(start_time, end_time=None):
                         (xmin, ymin), width, height,
                         edgecolor='yellow', facecolor='none', linewidth=1.5
                         ))
+            print(f"Processed and saved: {base_filename} ({len(region_data)} regions)")
 
             plt.show()
 
 
             # Deletes the FITS file after processing
-            print(f"Processed and saved: {base_filename} ({len(region_data)} regions)")
+            
 
 
         except Exception as e:
