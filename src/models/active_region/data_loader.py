@@ -1,17 +1,16 @@
 import os
-import time
+from datetime import datetime, timedelta
 import requests
 from tqdm import tqdm
 from pathlib import Path
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 from astropy.io import fits
 import astropy.units as u
 from sunpy.net import Fido, attrs as a
 import sunpy.map
 import numpy as np
-from scipy.ndimage import label, find_objects
-from skimage.measure import regionprops
+from scipy.ndimage import find_objects
+from skimage.measure import label, regionprops
 import pandas as pd
 
 
@@ -28,7 +27,9 @@ def hmi_data_loader(start_time, end_time=None):
     """
 
     if end_time is None:
-        end_time = start_time
+        start_time_dt = datetime.strptime(start_time, "%Y-%m-%d %H:%M")
+        end_time_dt = start_time_dt + timedelta(minutes=12)
+        end_time = end_time_dt.strftime("%Y-%m-%d %H:%M")
 
     # Parameters
 
@@ -64,56 +65,33 @@ def hmi_data_loader(start_time, end_time=None):
             #Threshold values for magnetic field
 
             mask = np.abs(mag_field) > threshold
-            labeled, num_features = label(mask)
-            timestamp = hmi_map.date.isot
             labeled = label(mask)
-            regions = regionprops(labeled)
-
-            # Plot the image
-            fig, ax = plt.subplots(figsize=(10, 10))
-            im = ax.imshow(mag_field, cmap='seismic', origin='lower', vmin=-2000, vmax=2000)
-            plt.colorbar(im, ax=ax, label="Magnetic Field Strength (Gauss)")
-            ax.set_title("HMI Magnetogram with Active Region Bounding Boxes")
-
-            # Draw bounding boxes
-            for i, region in enumerate(regions):
-                if region.area < 1000:  # skip small regions
-                    continue
-
-                # region.bbox = (min_row, min_col, max_row, max_col)
-                minr, minc, maxr, maxc = region.bbox
-                width = maxc - minc
-                height = maxr - minr
-
-                rect = patches.Rectangle(
-                    (minc, minr), width, height,
-                    linewidth=2, edgecolor='yellow', facecolor='none'
-                )
-                ax.add_patch(rect)
-
-                # Optionally: label the region
-                cy, cx = region.centroid
-                ax.text(cx, cy, f"{i+1}", color='yellow', fontsize=8, ha='center')
-
-            plt.show()
+            props = regionprops(labeled)
+            timestamp = hmi_map.date.isot
             region_data = []
 
-
-            #Issue is here, the loop is too big
-            for label_id in range(1, num_features + 1):
-                coords = np.argwhere(labeled == label_id)
-
-                if coords.shape[0] < min_area:
-                    continue
-                y_mean, x_mean = coords.mean(axis=0)
-
-                region_data.append({
-                    'timestamp': timestamp,
-                    'label_id': label_id,
-                    'centroid_x': x_mean,
-                    'centroid_y': y_mean
-                })
-                print(label_id)
+            for region in props:
+                if region.area > min_area:
+                    minr, minc, maxr, maxc = region.bbox
+                    # Calculate the center of the region
+                    cy, cx = region.centroid
+                    # Calculate the area of the region in pixels
+                    area = region.area
+                    # Calculate the mean magnetic field strength in the region
+                    mean_strength = np.mean(mag_field[labeled == region.label])
+                    # Append the data to the list
+                    region_data.append({
+                        'timestamp': timestamp,
+                        'center_x': cx,
+                        'center_y': cy,
+                        'area': area,
+                        'mean_strength': mean_strength,
+                        'label': region.label,
+                        'bbox_xmin': minc,
+                        'bbox_xmax': maxc,
+                        'bbox_ymin': minr,
+                        'bbox_ymax': maxr,
+                    })
 
             # Save the region data to a CSV file
 
@@ -134,46 +112,63 @@ def hmi_data_loader(start_time, end_time=None):
             continue
         print("finished processing files")
 
-# hmi_data_loader("2025-04-04 00:00", "2025-04-04 01:00")
+hmi_data_loader("2025-04-04 00:00")
 
 
 
-def hmi_image_viewer(file):
-    """
-    View HMI image using matplotlib.
+# def hmi_image_viewer(file):
+#     """
+#     View HMI image using matplotlib and overlay bounding boxes for active regions.
 
-    Parameters:
-    file: Path to the HMI FITS file.
+#     Parameters:
+#     file: Path to the HMI FITS file.
 
-    Return:
-    Either shows images for each FITS file (if multiple, may be unfeasible) or returns the data.
-    """
+#     Return:
+#     Displays the HMI image with bounding boxes around active regions.
+#     """
 
-    # Open the FITS file
-    with fits.open(file) as hdul:
-        # Get the data from the first extension
-        print(hdul.info())
-        data = hdul[1].data
-        header = hdul[1].header
-        bscale = header.get('BSCALE', 1)
-        bzero = header.get('BZERO', 0)
+#     # Open the FITS file
+#     with fits.open(file) as hdul:
+#         # Get the data from the first extension
+#         print(hdul.info())
+#         data = hdul[1].data
+#         header = hdul[1].header
+#         bscale = header.get('BSCALE', 1)
+#         bzero = header.get('BZERO', 0)
 
-        mag_field = data * bscale + bzero
+#         mag_field = data * bscale + bzero
 
+#         # Threshold for magnetic field strength in Gauss
+#         threshold = 100
 
+#         # Create a mask for regions with magnetic field strength above the threshold
+#         mask = np.abs(mag_field) > threshold
 
-        # Plot the data
-        plt.imshow(mag_field, cmap='seismic', origin='lower', vmin=-2000, vmax=2000)
-        plt.colorbar(label='Magnetic Field Strength (Gauss)')
-        plt.title('HMI Magnetogram (Seismic Colormap)')
-        plt.show()
+#         # Label connected regions
+#         labeled, num_features = label(mask)
 
-        return hdul
+#         # Plot the data
+#         plt.figure(figsize=(10, 8))
+#         plt.imshow(mag_field, cmap='seismic', origin='lower', vmin=-2000, vmax=2000)
+#         plt.colorbar(label='Magnetic Field Strength (Gauss)')
+#         plt.title('HMI Magnetogram with Active Regions')
+
+#         # Overlay bounding boxes for each labeled region
+#         for label_id in range(1, num_features + 1):
+#             coords = np.argwhere(labeled == label_id)
+#             if coords.shape[0] < 1000:  # Minimum area threshold
+#                 continue
+#             y_min, x_min = coords.min(axis=0)
+#             y_max, x_max = coords.max(axis=0)
+#             plt.gca().add_patch(plt.Rectangle((x_min, y_min), x_max - x_min, y_max - y_min,
+#                                               edgecolor='yellow', facecolor='none', linewidth=1.5))
+
+#         plt.show()
 
 
     
 
-hmi_image_viewer(r"C:\Users\UserAdmin\dsta_project\solar_flares\data\hmi.M_720s_files\hmi.M_720s.20250404_191200_TAI.3.magnetogram.fits")
+# hmi_image_viewer(r"C:\Users\UserAdmin\dsta_project\solar_flares\data\hmi.M_720s_files\hmi.M_720s.20250404_191200_TAI.3.magnetogram.fits")
 
 
 
