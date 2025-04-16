@@ -1,0 +1,39 @@
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*.pyo
+*.so
+
+# Virtual environments
+venv/
+env/
+*.egg-info/
+.eggs/
+
+# Logs and outputs
+*.log
+*.out
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# VS Code files
+.vscode/
+
+# macOS / Windows
+.DS_Store
+Thumbs.db
+
+# Python environment/conda files
+*.conda
+*.env
+
+# FITS data and output files
+*.fits
+*.csv
+*.npy
+*.png
+
+# Secret configs
+*.env
+config.json
