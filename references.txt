@@ -1,2 +1,2 @@
 Dave Williams, NASA, "Sun Fact Sheet", 2024.
-
+D. J. Mullan, "Magnetic Fields in the Sun, Journal of the Franklin Institute", 1974 - D. J. Mullan (1974) – Magnetic Fields in The Sun, Journal of the Franklin Institute (to be published; NASA Technical Report 19740015242). In this expert review, Mullan describes active region components: “plages, where the magnetic fields are of order several hundred gauss or less” and “sunspots, where the fields are of order 1–5 kilogauss”, noting that sunspots host the strongest fields on the solar surface

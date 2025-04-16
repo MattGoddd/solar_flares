@@ -4,15 +4,16 @@ import argparse
 def active_region_detector(start_time, end_time=None):
     """ 
     This function detects active regions in solar images.
-    It uses a pre-trained model to identify and classify active regions.
-    The function returns the detected active regions and their classifications.
+    It uses a helper function to identify and classify active regions.
+    The function returns the detected active regions and their specifications.
 
     Parameters:
     start_time (str): Start time for the data collection in YYYY-MM-DD HH:MM format.
-    end_time (str): End time for the data collection in YYYY-MM-DD HH:MM format.
+    end_time (str, optional): End time for the data collection in YYYY-MM-DD HH:MM format.
 
     Returns:
-    Coordinates of the detected active regions and their classifications, or maybe magnetogram data (ie, strength of magnetic field at that region)
+    Data of the detected active regions(coordinates, area, mean magnetic field strength, etc.), 
+    as well as a graph of the active regions with bounding boxes
     """
     active_regions = hmi_data_loader(start_time, end_time)
 

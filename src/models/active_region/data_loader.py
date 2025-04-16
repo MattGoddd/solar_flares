@@ -1,40 +1,46 @@
 import os
 from datetime import datetime, timedelta
-import requests
-from tqdm import tqdm
 from pathlib import Path
 import matplotlib.pyplot as plt
-from astropy.io import fits
-from astropy.coordinates import SkyCoord
 import astropy.units as u
 from sunpy.net import Fido, attrs as a
 import sunpy.map
 import numpy as np
-from scipy.ndimage import find_objects
 from skimage.measure import label, regionprops
 import pandas as pd
+import yaml
 
 
 def hmi_data_loader(start_time, end_time=None):
     """
     Download HMI data from the Solar Dynamics Observatory (SDO) using SunPy.
+    Images are taken in 12min intervals, and the data is filtered to find active regions.
+    It is recommended to put a time frame of 12 minutes for the data collection to obtain at least one result, 
+    Or to leave end_time blank which sets the end time to 12 minutes after the start time.
+    The function returns the data of the active regions in the given time frames.
 
     Parameters:
     start_time: Start time for the data collection in YYYY-MM-DD HH:MM format.
-    end_time: End time for the data collection in YYYY-MM-DD HH:MM format.
+    end_time (Optional): End time for the data collection in YYYY-MM-DD HH:MM format.
 
     Return:
-    List of data in a database file 
+    Data for the active regions in the given time frames in a list
     """
+    start_time_dt = datetime.strptime(start_time, "%Y-%m-%d %H:%M")
 
-    if end_time is None:
-        start_time_dt = datetime.strptime(start_time, "%Y-%m-%d %H:%M")
+    if end_time:
+        end_time_dt = datetime.strptime(end_time, "%Y-%m-%d %H:%M")
+
+    if end_time is None or (end_time_dt - start_time_dt).total_seconds() < 720:
         end_time_dt = start_time_dt + timedelta(minutes=12)
         end_time = end_time_dt.strftime("%Y-%m-%d %H:%M")
 
     # Parameters
 
-    download_dir = Path("hmi.M_720s_files")
+    with open("config/active_region_config.yaml", "r") as config_file:
+        config = yaml.safe_load(config_file)
+
+    download_dir = Path(config["download_dir"])
 
     # Creates the download directory if it doesn't exist
 
@@ -42,11 +48,19 @@ def hmi_data_loader(start_time, end_time=None):
 
     # Threshold for magnetic field strength in Gauss
 
-    threshold = 100
+    threshold = config["threshold"]
 
     # Minimum area in pixels for a region to be considered
 
-    min_area = 3000
+    min_area = config["min_area"]
+
+    # Set the boundaries for the bounding boxes in the image and for filtered data
+
+    max_reasonable_box_size = config["max_reasonable_box_size"]
+
+    # To set if the desired data is to be saved into a CSV file or not
+
+    csv_save = config["csv_save"]
 
     # Define the HMI data query
     query = Fido.search(
@@ -98,19 +112,19 @@ def hmi_data_loader(start_time, end_time=None):
 
             # Save the region data to a CSV file
 
-
             print("region data processed")
 
-            base_filename = os.path.basename(file).replace('.fits', '.csv')
-            df = pd.DataFrame(region_data)
-            df.to_csv(os.path.join(download_dir, base_filename), index=False)
-            print(f"Saved region data to {base_filename}")
+            if csv_save == True:
+                base_filename = os.path.basename(file).replace('.fits', '.csv')
+                df = pd.DataFrame(region_data)
+                df.to_csv(os.path.join(download_dir, base_filename), index=False)
+                print(f"Saved region data to {base_filename}")
 
             # Plot the bounding boxes for each labeled region
             plt.figure(figsize=(10, 8))
             plt.imshow(mag_field, cmap='seismic', origin='lower', vmin=-2000, vmax=2000)
             plt.colorbar(label='Magnetic Field Strength (Gauss)')
-            plt.title('HMI Magnetogram with Active Regions')
+            plt.title('HMI Magnetogram with Active Regions Labeled  ')
 
             # Overlay bounding boxes for each active region
             filtered_region_data = []
@@ -119,7 +133,6 @@ def hmi_data_loader(start_time, end_time=None):
                 ymin, ymax = region['bbox_ymin'], region['bbox_ymax']
                 width = xmax - xmin
                 height = ymax - ymin
-                max_reasonable_box_size = 2000  # Maximum reasonable box size in pixels
                 if width < max_reasonable_box_size and height < max_reasonable_box_size:
                     plt.gca().add_patch(plt.Rectangle(
                         (xmin, ymin), width, height,
@@ -129,20 +142,21 @@ def hmi_data_loader(start_time, end_time=None):
                 else:
                     print(f"Skipping region with large bounding box: Region {region['label']}")
 
-
-            print(f"Processed and saved: {base_filename} {len(filtered_region_data)} regions)")
-
             plt.show()
 
 
             # Deletes the FITS file after processing
+
             os.remove(file)
             print(f"Deleted file: {file}")
 
         except Exception as e:
             print(f"Error processing file {file}: {e}")
             continue
-        print("Finished processing files")
+        print("Finished processing files for {start_time} to {end_time}, with total number of regions: {len(region_data)}")
+        print("Filtered region data:")
+
+        filtered_region_data = pd.DataFrame(filtered_region_data)
 
         print(filtered_region_data)
 

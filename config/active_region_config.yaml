@@ -1,0 +1,24 @@
+---
+name: active_region_config
+description: Configuration for the active region module.
+version: 1.0
+author: Goh Sze Han Matthew
+
+# Parameters
+
+# Download directory for the HMI data
+download_dir: data/hmi.M_720s_files
+
+# Threshold value for the active region detector in Gauss
+threshold: 100
+
+# Minimum number of pixels in the active region
+min_area: 3000
+
+# Maximum bounding box dimensions (If bounding box is too huge, it is likely to be a false positive)
+max_reasonable_box_size: 2000
+
+# Boolean to decide whether to save the data in a CSV file under "hmi.M_720s_files"
+csv_save: true
+
+...
