@@ -61,17 +61,23 @@ def hmi_data_loader(start_time, end_time=None):
     # To set if the desired data is to be saved into a CSV file or not
 
     csv_save = config["csv_save"]
+    print(start_time, end_time)
+
+    filtered_region_data = []
+
+    counter = 0
 
     # Define the HMI data query
     query = Fido.search(
-        a.Time(start_time, end_time), 
-        a.Instrument.hmi, 
-        a.Physobs.los_magnetic_field,
-        a.Sample(720 * u.s)
+        a.Time("2025-04-04 12:00", "2025-04-04 13:00"), 
+        a.jsoc.Series("hmi.M_720s"),
+        a.jsoc.Notify("mattgoh2004@gmail.com"),
         )
+    print(query)
 
     files = Fido.fetch(query, path=download_dir)
     for file in files:
+    
         try:
             print(f"Processing file: {file}")
             hmi_map = sunpy.map.Map(file)
@@ -103,7 +109,6 @@ def hmi_data_loader(start_time, end_time=None):
                         'hg_coord': hmi_map.pixel_to_world(cx * u.pix, cy * u.pix).heliographic_stonyhurst,
                         'area': area,
                         'mean_strength': mean_strength,
-                        'label': region.label,
                         'bbox_xmin': minc,
                         'bbox_xmax': maxc,
                         'bbox_ymin': minr,
@@ -127,7 +132,6 @@ def hmi_data_loader(start_time, end_time=None):
             plt.title('HMI Magnetogram with Active Regions Labeled  ')
 
             # Overlay bounding boxes for each active region
-            filtered_region_data = []
             for region in region_data:
                 xmin, xmax = region['bbox_xmin'], region['bbox_xmax']
                 ymin, ymax = region['bbox_ymin'], region['bbox_ymax']
@@ -139,6 +143,7 @@ def hmi_data_loader(start_time, end_time=None):
                         edgecolor='yellow', facecolor='none', linewidth=1.5
                         ))
                     filtered_region_data.append(region)
+                    counter += 1
                 else:
                     print(f"Skipping region with large bounding box: Region {region['label']}")
 
@@ -150,19 +155,33 @@ def hmi_data_loader(start_time, end_time=None):
             os.remove(file)
             print(f"Deleted file: {file}")
 
+            print("Processing next file!")
+
         except Exception as e:
             print(f"Error processing file {file}: {e}")
             continue
-        print("Finished processing files for {start_time} to {end_time}, with total number of regions: {len(region_data)}")
-        print("Filtered region data:")
+    
+    print(f"Finished processing files for {start_time} to {end_time}, with total number of regions: {counter}")
 
-        filtered_region_data = pd.DataFrame(filtered_region_data)
+    filtered_region_data = pd.DataFrame(filtered_region_data)
 
-        print(filtered_region_data)
+    print(filtered_region_data)
 
-        return filtered_region_data
+    return filtered_region_data
 
+# def active_region_numbering(df: pd.DataFrame, ) -> pd.DataFrame:
+#     """
+#     Establishes the NOAA AR numbering of the active regions indentified
 
+#     Parameters:
+#     df: DataFrame containing active region data.
+
+#     Return:
+#     DataFrame with numbered active regions.
+#     """
+#     # Create a new column for the region number
+#     df['region_number'] = np.arange(1, len(df) + 1)
+#     return df
 
 # def hmi_image_viewer(file):
 #     """

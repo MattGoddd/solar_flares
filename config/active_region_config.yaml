@@ -6,6 +6,8 @@ author: Goh Sze Han Matthew
 
 # Parameters
 
+start_time: 
+
 # Download directory for the HMI data
 download_dir: data/hmi.M_720s_files
 
