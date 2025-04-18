@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import matplotlib.pyplot as plt
 import astropy.units as u
@@ -30,10 +30,13 @@ def hmi_data_loader(start_time, end_time=None):
 
     if end_time:
         end_time_dt = datetime.strptime(end_time, "%Y-%m-%d %H:%M")
-
-    if end_time is None or (end_time_dt - start_time_dt).total_seconds() < 720:
+    else:
         end_time_dt = start_time_dt + timedelta(minutes=12)
-        end_time = end_time_dt.strftime("%Y-%m-%d %H:%M")
+
+    print(start_time_dt, type(start_time_dt), end_time_dt, type(end_time_dt))
+    
+    start_time = start_time_dt.strftime("%Y-%m-%dT%H:%M:%S")
+    end_time = end_time_dt.strftime("%Y-%m-%dT%H:%M:%S")
 
     # Parameters
 
@@ -67,10 +70,13 @@ def hmi_data_loader(start_time, end_time=None):
 
     counter = 0
 
+    now = datetime.now(timezone.utc)
+    test = now - timedelta(hours=1)
+
     # Define the HMI data query
     query = Fido.search(
-        a.Time("2025-04-04 12:00", "2025-04-04 13:00"), 
-        a.jsoc.Series("hmi.M_720s"),
+        a.Time(test, now), 
+        a.jsoc.Series("hmi.M_720s_nrt"),
         a.jsoc.Notify("mattgoh2004@gmail.com"),
         )
     print(query)
@@ -127,7 +133,7 @@ def hmi_data_loader(start_time, end_time=None):
 
             # Plot the bounding boxes for each labeled region
             plt.figure(figsize=(10, 8))
-            plt.imshow(mag_field, cmap='seismic', origin='lower', vmin=-2000, vmax=2000)
+            plt.imshow(mag_field, cmap='seismic', origin='upper', vmin=-2000, vmax=2000)
             plt.colorbar(label='Magnetic Field Strength (Gauss)')
             plt.title('HMI Magnetogram with Active Regions Labeled  ')
 
