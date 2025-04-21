@@ -3,7 +3,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import matplotlib.pyplot as plt
 import astropy.units as u
-from sunpy.net import Fido, attrs as a
+from sunpy.net import Fido, attrs as a, hek
+from sunpy.time import parse_time
 import sunpy.map
 import numpy as np
 from skimage.measure import label, regionprops
@@ -175,19 +176,26 @@ def hmi_data_loader(start_time, end_time=None):
 
     return filtered_region_data
 
-# def active_region_numbering(df: pd.DataFrame, ) -> pd.DataFrame:
-#     """
-#     Establishes the NOAA AR numbering of the active regions indentified
+def active_region_numbering(start_time, end_time, threshold = 5, df: pd.DataFrame = None) -> pd.DataFrame:
+    """
+    Establishes the NOAA AR numbering of the active regions indentified based on a certain threshold value
 
-#     Parameters:
-#     df: DataFrame containing active region data.
+    Parameters:
+    df: DataFrame containing active region data.
 
-#     Return:
-#     DataFrame with numbered active regions.
-#     """
-#     # Create a new column for the region number
-#     df['region_number'] = np.arange(1, len(df) + 1)
-#     return df
+    Return:
+    DataFrame with numbered active regions.
+    """
+    client = hek.HEKClient()
+    noaa_list = client.search (
+        hek.attrs.Time(start_time, end_time),
+        hek.attrs.EventType('AR'),
+    )
+
+    print(noaa_list)
+
+active_region_numbering(start_time="2025-04-15 21:55", end_time="2025-04-15 21:55")
+    
 
 # def hmi_image_viewer(file):
 #     """
