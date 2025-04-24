@@ -1,56 +1,52 @@
+import drms
+import json, numpy as np, matplotlib.pylab as plt, matplotlib.ticker as mtick
+from datetime import datetime, timezone, timedelta
+from astropy.io import fits
+from sunpy.visualization.colormaps import color_tables as ct
+from matplotlib.dates import *
+import matplotlib.image as mpimg
 import pandas as pd
-from sunpy.net import Fido, attrs as a
-from sunpy.map import Map
-import astropy.units as u
-from datetime import datetime
-from sunpy.net.jsoc import JSOCClient
+import sunpy.map
+import sunpy.io
+import os
 
-def active_region_data_loader(start_time, end_time = None)  -> pd.DataFrame:
-    """
-    This function takes in a Dataframe containing the coordinates of active regions,
-    and returns the physical features of these active regions with respect to these active regions
+# Establish connection to JSOC
 
-    Parameters:
-    df: DataFrame containing active region data.
+c = drms.Client()
 
-    Return:
-    DataFrame with physical features of active regions.
+# Define the series
+print(c.series(r'hmi\.sharp_'))
 
-    """
-    # if not df:
-    #     raise ValueError("The DataFrame is empty. Please provide a valid DataFrame.")
-     
-    # result = Fido.search(
-    #     a.Time(start_time, end_time),
-    #     a.Instrument.hmi,
-    #     a.Physobs.los_magnetic_field,
-    #     a.Provider.jsoc,
-    #     a.Sample(12 * u.minute),
-    #     a.jsoc.Series('hmi.sharp_cea_720s'),
-    # )
-    # if result:
-    #     sharp_file = Fido.fetch(result)
-    # else:
-    #     sharp_file = None
-    # if not sharp_file:
-    #         raise ValueError(f"No data found for the specified time range: {start_time} to {end_time}.")
-    client = JSOCClient()
-    print(client.help())
-    
-    # for region in df:
-    #     hp_coord = region['hp_coord']
-    #     hg_coord = region['hg_coord']
-    #     timestamp = region['timestamp']
-    #     sharp_file = Fido.search(
-    #         a.Time(start_time, end_time),
-    #         a.Instrument.hmi,
-    #         a.Physobs.magnetic_field,
-    #         a.Provider.jsoc,
-    #         a.Sample(12 * u.minute),
-    #         a.jsoc.series('hmi.B_720s'),
-    #     )
-    #     if not sharp_file:
-    #         raise ValueError(f"No data found for the specified time range: {start_time} to {end_time}.")
-        
+si = c.info('hmi.sharp_cea_720s_nrt')
 
-active_region_data_loader("2025-04-15 21:55", "2025-04-15 21:55")
+keywords = list(si.keywords.index)
+print(keywords)
+
+end_time = datetime.now(timezone.utc)
+
+start_time = end_time - timedelta(hours = 2)
+
+jsoc_time_format = "%Y.%m.%d_%H:%M:%S_TAI"
+start_str = start_time.strftime(jsoc_time_format)
+end_str = end_time.strftime(jsoc_time_format)
+
+keys = c.query(f'hmi.sharp_cea_720s_nrt[][{start_str} - {end_str}][]', key = keywords)
+
+print(keys)
+
+output_dir = "data/sharp_csv"
+os.makedirs(output_dir, exist_ok=True)
+
+df = pd.DataFrame(keys)
+df.to_csv(os.path.join(output_dir, "nrt_sharp"), index = False)
+
+def parse_tai_string(tstr, datetime=True):
+    year   = int(tstr[:4])
+    month  = int(tstr[5:7])
+    day    = int(tstr[8:10])
+    hour   = int(tstr[11:13])
+    minute = int(tstr[14:16])
+    if datetime: 
+        return datetime(year,month,day,hour,minute)
+    else: 
+        return year,month,day,hour,minute

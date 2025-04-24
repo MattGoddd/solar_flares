@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import astropy.units as u
 from sunpy.net import Fido, attrs as a, hek
 from sunpy.time import parse_time
+from sunpy.net.hek import HEKClient
+from sunpy.net.hek.attrs import EventType, OBS
 import sunpy.map
 import numpy as np
 from skimage.measure import label, regionprops
@@ -71,12 +73,9 @@ def hmi_data_loader(start_time, end_time=None):
 
     counter = 0
 
-    now = datetime.now(timezone.utc)
-    test = now - timedelta(hours=1)
-
     # Define the HMI data query
     query = Fido.search(
-        a.Time(test, now), 
+        a.Time(start_time, end_time), 
         a.jsoc.Series("hmi.M_720s_nrt"),
         a.jsoc.Notify("mattgoh2004@gmail.com"),
         )
@@ -176,25 +175,41 @@ def hmi_data_loader(start_time, end_time=None):
 
     return filtered_region_data
 
-def active_region_numbering(start_time, end_time, threshold = 5, df: pd.DataFrame = None) -> pd.DataFrame:
-    """
-    Establishes the NOAA AR numbering of the active regions indentified based on a certain threshold value
+hmi_data_loader("2025-04-15 21:55")
 
-    Parameters:
-    df: DataFrame containing active region data.
+# def active_region_numbering(start_time, end_time, threshold = 5, df: pd.DataFrame = None) -> pd.DataFrame:
+#     """
+#     Establishes the NOAA AR numbering of the active regions indentified based on a certain threshold value
 
-    Return:
-    DataFrame with numbered active regions.
-    """
-    client = hek.HEKClient()
-    noaa_list = client.search (
-        hek.attrs.Time(start_time, end_time),
-        hek.attrs.EventType('AR'),
-    )
+#     Parameters:
+#     df: DataFrame containing active region data.
 
-    print(noaa_list)
+#     Return:
+#     DataFrame with numbered active regions.
+#     """
+#     client = hek.HEKClient()
 
-active_region_numbering(start_time="2025-04-15 21:55", end_time="2025-04-15 21:55")
+#     with open("config/active_region_config.yaml", "r") as config_file:
+#         config = yaml.safe_load(config_file)
+
+#     start_time = parse_time(start_time)
+#     end_time = parse_time(end_time)
+
+#     noaa_list = client.search (
+#         a.Time(start_time, end_time),
+#         EventType("AR"),
+#     )
+
+#     names = [name for name in noaa_list.colnames if noaa_list[name].ndim <= 1]
+#     df_noaa = noaa_list[names].to_pandas()
+
+#     df_noaa.to_csv(os.path.join(Path(config["download_dir"]), "active_regions.csv"), index=False)
+
+#     # Just show key columns
+#     print(df_noaa)
+
+
+# # active_region_numbering(start_time="2025-04-15 21:55", end_time="2025-04-15 21:55")
     
 
 # def hmi_image_viewer(file):
