@@ -29,18 +29,18 @@ def data_loader(number_of_days = 1):
     c = drms.Client()
 
     # Define the series
-    print(c.series(r'hmi\.sharp_'))
+    # print(c.series(r'hmi\.sharp_'))
 
     si = c.info('hmi.sharp_cea_720s')
 
-    end_time = datetime.now(timezone.utc) - timedelta(days = 465)
+    end_time = datetime.now(timezone.utc) - timedelta(days = 100)
 
     start_time = end_time - timedelta(days = 1)
 
     # Initialize or load existing DataFrame and CSV
     output_dir = "data/sharp_csv"
     os.makedirs(output_dir, exist_ok=True)
-    csv_path = os.path.join(output_dir, "training_data.csv")
+    csv_path = os.path.join(output_dir, "testing_data.csv")
 
     if os.path.exists(csv_path):
         combined_df = pd.read_csv(csv_path)
@@ -55,7 +55,7 @@ def data_loader(number_of_days = 1):
         start_str = start_time.strftime(jsoc_time_format)
         end_str = end_time.strftime(jsoc_time_format)
 
-        # Loading the X_train data
+        # Loading the data
         data = c.query(f'hmi.sharp_cea_720s[][{start_str} - {end_str}@1h][]', 
                     key='T_REC, NOAA_AR, USFLUX,TOTUSJH,TOTPOT,MEANGBT,MEANGBZ,MEANJZD,MEANPOT,MEANSHR,SHRGT45,R_VALUE,AREA_ACR'
         )
@@ -102,4 +102,4 @@ def data_loader(number_of_days = 1):
 
     print(combined_df)
 
-data_loader(300)
+data_loader(30)
