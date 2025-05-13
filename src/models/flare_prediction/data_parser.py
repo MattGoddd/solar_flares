@@ -8,6 +8,8 @@ def data_parser(csv_name: str):
     Args:
         csv_path (str): Path to the input CSV file.
     """
+
+    
     # Load the data from the CSV file
     output_dir = "data/sharp_csv"
     os.makedirs(output_dir, exist_ok=True)
@@ -20,7 +22,9 @@ def data_parser(csv_name: str):
 
     # Add new column for classification
     df_filtered = df.copy()
-    df_filtered = df_filtered.assign(y_value = 0)
+
+    if 'y_value' not in df_filtered.columns:
+        df_filtered = df_filtered.assign(y_value = 0)
 
     for index, row in df_filtered.iterrows():
         if type(row.flare_label) != str:
@@ -38,7 +42,6 @@ def data_parser(csv_name: str):
             df_filtered.at[index, 'y_value'] = 0
             continue
         
-
         # If flare class is B, assign y_value as 1
         if letter == 'B':
             df_filtered.at[index, 'y_value'] = 1
@@ -59,6 +62,11 @@ def data_parser(csv_name: str):
         elif letter == 'X':
             df_filtered.at[index, 'y_value'] = 6
     
+    valid_rows = ~df_filtered.isnull().any(axis=1)
+    df_filtered = df_filtered[valid_rows]
+    print(df_filtered.isnull().sum())  # Shows count of NaN or None per column
+    print(df_filtered.isnull().any())  # Shows True/False per column
+    
     df_filtered.to_csv(csv_path, index=False)
 
-data_parser('training_data.csv')
+data_parser('testing_data.csv')
