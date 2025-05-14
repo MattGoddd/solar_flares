@@ -11,6 +11,7 @@ import sunpy.io
 import os
 from sunpy.net import attrs as a, hek
 from sunpy.time import parse_time
+import time
 
 def parse_tai_string(tstr, return_datetime=True):
     year   = int(tstr[:4])
@@ -26,6 +27,9 @@ def parse_tai_string(tstr, return_datetime=True):
 # Establish connection to JSOC
 
 def data_loader(number_of_days = 1):
+
+    total_start = time.time()
+
     c = drms.Client()
 
     # Define the series
@@ -33,14 +37,14 @@ def data_loader(number_of_days = 1):
 
     si = c.info('hmi.sharp_cea_720s')
 
-    end_time = datetime.now(timezone.utc) - timedelta(days = 100)
+    end_time = datetime.now(timezone.utc) - timedelta(days = 700)
 
     start_time = end_time - timedelta(days = 1)
 
     # Initialize or load existing DataFrame and CSV
     output_dir = "data/sharp_csv"
     os.makedirs(output_dir, exist_ok=True)
-    csv_path = os.path.join(output_dir, "testing_data.csv")
+    csv_path = os.path.join(output_dir, "training_data.csv")
 
     if os.path.exists(csv_path):
         combined_df = pd.read_csv(csv_path)
@@ -48,6 +52,7 @@ def data_loader(number_of_days = 1):
         combined_df = pd.DataFrame()
 
     for i in range(number_of_days):
+        start = time.time()
         start_time = start_time - timedelta(days=1)
         end_time = end_time - timedelta(days=1)
 
@@ -94,12 +99,16 @@ def data_loader(number_of_days = 1):
 
         # Append to combined DataFrame
         combined_df = pd.concat([combined_df, df_filtered], ignore_index=True)
+        end = time.time()
 
         print(f"Day: {i + 1}/{number_of_days} processed")
+        print(f"Time taken: {end - start:.4f} seconds")
 
     # Save the combined DataFrame to CSV
     combined_df.to_csv(csv_path, index=False)
+    total_end = time.time()
+    print(f"Total time taken for {number_of_days} days: {total_end - total_start:.4f} seconds")
 
     print(combined_df)
 
-data_loader(30)
+data_loader(300)
