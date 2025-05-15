@@ -37,7 +37,7 @@ def data_loader(number_of_days = 1):
 
     si = c.info('hmi.sharp_cea_720s')
 
-    end_time = datetime.now(timezone.utc) - timedelta(days = 700)
+    end_time = datetime.now(timezone.utc) - timedelta(days = 850)
 
     start_time = end_time - timedelta(days = 1)
 
@@ -111,4 +111,5 @@ def data_loader(number_of_days = 1):
 
     print(combined_df)
 
-data_loader(300)
+
+data_loader(150)
