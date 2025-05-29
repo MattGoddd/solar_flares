@@ -1,12 +1,10 @@
 ---
 name: active_region_config
 description: Configuration for the active region module.
-version: 1.0
+version: 1.4
 author: Goh Sze Han Matthew
 
 # Parameters
-
-start_time: 
 
 # Download directory for the HMI data
 download_dir: data/hmi.M_720s_files

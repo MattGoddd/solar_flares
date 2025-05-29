@@ -5,12 +5,11 @@ import os
 
 def data_classifier(csv_name: str):
     """
-    Parses the CSV file to extract relevant data and save it to a new CSV file.
+        Classifies the data based on the flare intensity (if any) and save it to the existing CSV file.
     
     Args:
         csv_path (str): Path to the input CSV file.
     """
-
     
     # Load the data from the CSV file
     output_dir = "data/sharp_csv"
@@ -63,12 +62,14 @@ def data_classifier(csv_name: str):
     
     valid_rows = ~df_filtered.isnull().any(axis=1)
     df_filtered = df_filtered[valid_rows]
+    label_counts = df_filtered['y_value'].value_counts().sort_index()
+    print(label_counts)
     
     df_filtered.to_csv(csv_path, index=False)
 
 def data_cleaner(csv_name: str):
     """
-    Cleans the data by removing rows with NaN values and saves it to a new CSV file.
+    Cleans the data by removing rows with NaN values and saves it to the existing CSV file.
     
     Args:
         csv_path (str): Path to the input CSV file.
@@ -78,8 +79,6 @@ def data_cleaner(csv_name: str):
     output_dir = "data/sharp_csv"
     os.makedirs(output_dir, exist_ok=True)
     csv_path = os.path.join(output_dir, csv_name)
-
-
 
     if os.path.exists(csv_path):
         df = pd.read_csv(csv_path)
@@ -108,7 +107,7 @@ def data_cleaner(csv_name: str):
 
 def data_balancer(csv_name: str):
     """
-    Balances the data by implementing SMOTE for the minority class(es) and saves it to a new CSV file.
+        Balances the data by implementing SMOTE for the minority class(es) and saves it to a new CSV file.
     
     Args:
         csv_path (str): Path to the input CSV file.
@@ -136,6 +135,8 @@ def data_balancer(csv_name: str):
     Y_train = df_filtered['y_value'].copy()
     unique, count = np.unique(Y_train, return_counts=True)
     print(f"Unique classes and their counts before sampling: {dict(zip(unique, count))}")
+    
+    # Change your sampling strategy here
 
     adasyn = ADASYN(sampling_strategy='not majority')
     x = df_filtered.drop(columns=['y_value', 'flare_label'])
@@ -153,9 +154,10 @@ def data_balancer(csv_name: str):
 
     # Save the balanced DataFrame to a new CSV file
     csv_path = os.path.join(output_dir, f"resampled_{data_type}_data.csv")
-    df_resampled.to_csv(csv_path, index=False, encoding = 'utf-8')
+    df_resampled.to_csv(csv_path, index=False)
 
 
-data_balancer("training_data_raw.csv")
+
 
     
+data_classifier("training_data_raw.csv")
