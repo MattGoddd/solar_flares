@@ -37,14 +37,14 @@ def data_loader(number_of_days = 1):
 
     si = c.info('hmi.sharp_cea_720s')
 
-    end_time = datetime.now(timezone.utc) - timedelta(days = 850)
+    end_time = datetime.now(timezone.utc) - timedelta(days = 2821)
 
     start_time = end_time - timedelta(days = 1)
 
     # Initialize or load existing DataFrame and CSV
     output_dir = "data/sharp_csv"
     os.makedirs(output_dir, exist_ok=True)
-    csv_path = os.path.join(output_dir, "training_data.csv")
+    csv_path = os.path.join(output_dir, "raw.csv")
 
     if os.path.exists(csv_path):
         combined_df = pd.read_csv(csv_path)
@@ -112,4 +112,4 @@ def data_loader(number_of_days = 1):
     print(combined_df)
 
 
-data_loader(150)
+data_loader(2)

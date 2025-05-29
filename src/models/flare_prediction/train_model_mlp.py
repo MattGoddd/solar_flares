@@ -4,7 +4,8 @@ import tensorflow as tf
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import precision_score, recall_score, classification_report
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Dense, LSTM
+from tensorflow.keras.activations import tanh
 from tensorflow.keras.activations import linear, relu, softmax
 
 import os
@@ -33,24 +34,22 @@ def build_model(model_type = "mlp"):
         Dense(32, activation=relu),
         Dense(16, activation=relu),
         Dense(8, activation=relu),
-        Dense(4, activation=relu),
         Dense(6, activation = linear),
     ], name = "flare_predictor"
         )
 
-    # elif model_type == "lstm":
-    #     model = Sequential(
-    # [
-    #     tf.keras.Input(shape = (X_train.shape[1],)),
-    #     LSTM(64, activation=tanh, dropout = 0.2, return_sequences=True),
-    #     LSTM(48, activation=tanh, dropout = 0.2,return_sequences=True),
-    #     LSTM(32, activation=tanh, dropout = 0.2, return_sequences=True),
-    #     LSTM(16, activation=tanh, dropout = 0.2, return_sequences=True),
-    #     LSTM(8, activation=tanh, rdropout = 0.2, eturn_sequences=True),
-    #     LSTM(4, activation=tanh, dropout = 0.2, return_sequences=True),
-    #     LSTM(6, activation = linear),
-    # ], name = "flare_predictor"
-    #     )
+    elif model_type == "lstm":
+        model = Sequential(
+    [
+        tf.keras.Input(shape = (1, X_train.shape[1])),
+        LSTM(64, activation=tanh, dropout = 0.2, return_sequences=True),
+        LSTM(48, activation=tanh, dropout = 0.2,return_sequences=True),
+        LSTM(32, activation=tanh, dropout = 0.2, return_sequences=True),
+        LSTM(16, activation=tanh, dropout = 0.2, return_sequences=True),
+        LSTM(8, activation=tanh, dropout = 0.2, return_sequences=True),
+        LSTM(6, activation = linear),
+    ], name = "flare_predictor"
+        )
 
     return model
 
@@ -163,7 +162,10 @@ scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 
-model = build_model()
+model = build_model("lstm")
+X_train = X_train.reshape((X_train.shape[0], 1, X_train.shape[1]))  # shape: (batch_size, 1, 11)
+X_test = X_test.reshape((X_test.shape[0], 1, X_test.shape[1]))      # shape: (batch_size, 1, 11)
+
 model = compile_model(model)
 train_model(model, X_train, Y_train, X_test, Y_test)
 results, precision, recall, report = evaluate_model(model, X_test, Y_test)
